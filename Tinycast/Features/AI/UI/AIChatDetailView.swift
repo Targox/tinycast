@@ -164,8 +164,8 @@ private struct AIChatComposer: View {
         }
         .padding(Theme.Spacing.md)
         .background {
-            Color.clear.glassEffect(
-                .regular, in: RoundedRectangle(cornerRadius: Theme.Radius.dialog, style: .continuous))
+            Color.clear.glassSurface(
+                in: RoundedRectangle(cornerRadius: Theme.Radius.dialog, style: .continuous))
         }
         .animation(.snappy, value: settings.webSearchEnabled)
     }
@@ -581,7 +581,7 @@ private struct FindCounter: View {
         .buttonStyle(.borderless)
         .padding(.horizontal, Theme.Spacing.lg)
         .padding(.vertical, Theme.Spacing.sm)
-        .glassEffect(.regular, in: Capsule())
+        .glassSurface(in: Capsule())
     }
 }
 
@@ -673,7 +673,7 @@ private struct ContextCard: View {
         }
         .padding(Theme.Spacing.xl)
         .frame(width: Theme.Size.chatContextCard, alignment: .leading)
-        .glassEffect(.regular, in: shape)
+        .glassSurface(in: shape)
         // Solid under the glass: the card rises over the transcript, whose text must not show through.
         .background { shape.fill(Theme.Colors.windowSurface) }
         .shadow(color: Theme.Colors.tooltipShadow, radius: Theme.Spacing.xl, y: Theme.Spacing.xs)

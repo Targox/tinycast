@@ -194,3 +194,29 @@ extension View {
                 open: open, height: height, revision: revision, flipped: flipped, list: list))
     }
 }
+
+/// An extension panel's glass, owned here so the launcher's own glass stays free to change.
+private struct ExtensionGlass<S: Shape>: ViewModifier {
+    let shape: S
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(macOS 26, *) {
+            content.glassEffect(.regular, in: shape)
+        } else {
+            content.background {
+                shape
+                    .fill(.ultraThinMaterial)
+                    .overlay { shape.stroke(ExtensionColors.fieldStroke, lineWidth: 0.5) }
+                    .shadow(color: Theme.Colors.tooltipShadow, radius: 6, y: 2)
+            }
+        }
+    }
+}
+
+extension View {
+    /// Liquid Glass on macOS 26; Sequoia draws a material panel with its own edge and lift.
+    func extensionGlass(in shape: some Shape) -> some View {
+        modifier(ExtensionGlass(shape: shape))
+    }
+}

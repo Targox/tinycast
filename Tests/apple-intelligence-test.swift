@@ -19,6 +19,18 @@ struct AppleIntelligenceTests {
     static func main() async {
         statusCopyCoversEveryReason()
         deltasFollowCumulativeSnapshots()
+        if #available(macOS 26, *) {
+            await foundationModelChecks()
+        } else {
+            print("skip  FoundationModels checks: the framework needs macOS 26")
+        }
+
+        print("\(passes) passed, \(failures) failed")
+        if failures > 0 { exit(1) }
+    }
+
+    @available(macOS 26, *)
+    static func foundationModelChecks() async {
         turnsSplitThePromptFromItsHistory()
         generationErrorsBecomeReadableFailures()
         if ProcessInfo.processInfo.environment["TINYCAST_TEST_APPLE_INTELLIGENCE"] == "1" {
@@ -26,9 +38,6 @@ struct AppleIntelligenceTests {
         } else {
             print("skip  on-device stream — set TINYCAST_TEST_APPLE_INTELLIGENCE=1 to run")
         }
-
-        print("\(passes) passed, \(failures) failed")
-        if failures > 0 { exit(1) }
     }
 
     static func statusCopyCoversEveryReason() {
@@ -36,7 +45,7 @@ struct AppleIntelligenceTests {
         expect(AppleIntelligenceStatus.available.isAvailable, "available is available")
 
         let unavailable: [AppleIntelligenceStatus] = [
-            .deviceNotEligible, .notEnabled, .modelNotReady
+            .deviceNotEligible, .notEnabled, .modelNotReady, .requiresNewerMacOS
         ]
         for status in unavailable {
             expect(!status.isAvailable, "\(status) is not available")
@@ -62,6 +71,7 @@ struct AppleIntelligenceTests {
         expect(repeated.delta(from: "Hello").isEmpty, "an unchanged snapshot emits nothing")
     }
 
+    @available(macOS 26, *)
     static func turnsSplitThePromptFromItsHistory() {
         let request = AIRequest(
             instructions: "Be brief.",
@@ -106,6 +116,7 @@ struct AppleIntelligenceTests {
         expect(empty.prompt == nil, "a request with no user turn has no prompt")
     }
 
+    @available(macOS 26, *)
     static func generationErrorsBecomeReadableFailures() {
         let context = LanguageModelSession.GenerationError.Context(
             debugDescription: "internal-detail-42")
@@ -158,11 +169,13 @@ struct AppleIntelligenceTests {
         expect(finished, "the on-device stream terminated with .finished")
     }
 
+    @available(macOS 26, *)
     private static func text(_ segments: [Transcript.Segment]) -> String {
         segments.compactMap { if case .text(let segment) = $0 { segment.content } else { nil } }
             .joined()
     }
 
+    @available(macOS 26, *)
     private static func entryText(_ entry: Transcript.Entry) -> String {
         switch entry {
         case .instructions(let value): return text(value.segments)

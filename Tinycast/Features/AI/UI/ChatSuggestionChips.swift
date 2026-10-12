@@ -24,7 +24,7 @@ struct ChatSuggestionChips: View {
                     .padding(.horizontal, metrics.spacing.xs)
                     .padding(.vertical, metrics.spacing.xxs)
                 }
-                .buttonStyle(.glass)
+                .glassButtonStyle()
                 .buttonBorderShape(.capsule)
                 .help("Reply “\(choice)”")
                 .accessibilityLabel("Reply: \(choice)")

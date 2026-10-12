@@ -345,8 +345,8 @@ jobs:
           APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/${DISPLAY_NAME}.app"
           PLIST_MIN="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$APP/Contents/Info.plist")"
           echo "LSMinimumSystemVersion=$PLIST_MIN"
-          if [ "$PLIST_MIN" != "26.0" ]; then
-            echo "::error::expected LSMinimumSystemVersion 26.0, got $PLIST_MIN"
+          if [ "$PLIST_MIN" != "15.0" ]; then
+            echo "::error::expected LSMinimumSystemVersion 15.0, got $PLIST_MIN"
             exit 1
           fi
           for BIN in "$APP/Contents/MacOS/${DISPLAY_NAME}" "$APP/Contents/Helpers/ClipboardTextHelper" "$APP/Contents/Helpers/Tinycast Dictation.app/Contents/MacOS/Tinycast Dictation"; do
@@ -358,11 +358,20 @@ jobs:
                 *) echo "::error::${BIN##*/}: no $A slice — this is not a universal build"; exit 1 ;;
               esac
               MINOS="$(xcrun vtool -arch "$A" -show-build-version "$BIN" | awk '/minos/{print $2}')"
-              if [ "$MINOS" != "26.0" ]; then
-                echo "::error::${BIN##*/} $A: expected a macOS 26.0 floor, got minos=$MINOS"
+              if [ "$MINOS" != "15.0" ]; then
+                echo "::error::${BIN##*/} $A: expected a macOS 15.0 floor, got minos=$MINOS"
                 exit 1
               fi
             done
+          done
+          # A strong FoundationModels load command means dyld refuses to launch the app on Sequoia.
+          for A in arm64 x86_64; do
+            STRONG="$(otool -l -arch "$A" "$APP/Contents/MacOS/${DISPLAY_NAME}" \
+              | awk '/^ *cmd /{cmd=$2} /^ *name /{if (cmd=="LC_LOAD_DYLIB" && $2 ~ /FoundationModels/) print $2}')"
+            if [ -n "$STRONG" ]; then
+              echo "::error::$A: FoundationModels is strongly linked, so macOS 15 cannot launch it"
+              exit 1
+            fi
           done
 
       - name: Assert the signature is notarizable

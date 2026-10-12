@@ -5,8 +5,9 @@ verifying a change is [testing.md](testing.md).
 
 ## Requirements
 
-- macOS 26 or later (Liquid Glass).
-- Xcode 26 — it provides the SwiftUI macro plugin and the SDK.
+- macOS 15 or later to run Tinycast; macOS 26 draws it in Liquid Glass, Sequoia in materials.
+- Xcode 26 (it runs on macOS 15.6 or later): it provides the SwiftUI macro plugin and the SDK. The
+  macOS 15 build uses that same SDK with only the deployment target lowered.
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen), and for linting:
   `brew install swiftlint`.
 - Node, for the generators and the local test stub servers `run-tests.sh` drives. It is the only

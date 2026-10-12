@@ -297,7 +297,7 @@ as `.codex`, so an existing selection survives the rename.
 
 | Setting | Transport | Default base URL |
 | --- | --- | --- |
-| Apple Intelligence | Foundation Models, on device | none |
+| Apple Intelligence | Foundation Models, on device (macOS 26+) | none |
 | Codex | installed `codex app-server` | user's Codex account |
 | Claude | installed `claude -p` | user's Claude login |
 | Grok | installed `grok --prompt-file` | user's Grok login |

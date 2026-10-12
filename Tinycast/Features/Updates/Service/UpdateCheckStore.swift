@@ -18,6 +18,8 @@ final class UpdateCheckStore {
 
     let channel: ReleaseChannel
     let runningVersion: AppVersion?
+    /// `false` on a Mac older than the feed builds for, where any release would fail to launch.
+    let feedRunsHere: Bool
 
     /// The newest release on this channel, whether or not it is newer than what is running.
     private(set) var latest: AvailableRelease?
@@ -40,10 +42,12 @@ final class UpdateCheckStore {
         runningVersion: AppVersion? = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String)
             .flatMap(AppVersion.init),
         fileURL: URL = AppPaths.caches().appendingPathComponent("update-check.json"),
+        feedRunsHere: Bool = ProcessInfo.processInfo.isOperatingSystemAtLeast(ReleaseFeed.minimumMacOS),
         fetch: @escaping @Sendable () async -> Data? = UpdateCheckStore.body
     ) {
         self.channel = channel
         self.runningVersion = runningVersion
+        self.feedRunsHere = feedRunsHere
         self.fileURL = fileURL
         self.fetch = fetch
         guard let data = try? Data(contentsOf: fileURL),
@@ -58,13 +62,13 @@ final class UpdateCheckStore {
 
     /// Newer than what is running. What the window offers, including a version already skipped.
     var update: AvailableRelease? {
-        guard let runningVersion else { return nil }
+        guard feedRunsHere, let runningVersion else { return nil }
         return ReleaseFeed.offer(latest, running: runningVersion, skipped: nil)
     }
 
     /// The same, minus anything dismissed. Only this may interrupt the user.
     var unskippedUpdate: AvailableRelease? {
-        guard let runningVersion else { return nil }
+        guard feedRunsHere, let runningVersion else { return nil }
         return ReleaseFeed.offer(latest, running: runningVersion, skipped: skippedVersion)
     }
 

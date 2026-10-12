@@ -151,7 +151,12 @@ nothing on every route, and a 3B model is markedly worse at it. `NLLanguageRecog
 source language, because `TranslationSession(installedSource:target:)` needs a concrete one and
 `LanguageAvailability` reports only a status.
 
-`TranslationError` is annotated `macOS 26.4` while the deployment floor is `26.0`, so failures are
+**Sequoia gets its session through SwiftUI.** `TranslationSession(installedSource:target:)` is
+macOS 26; on macOS 15 the framework hands a session only to `.translationTask`. `SequoiaTranslator`
+hosts that modifier in a 1-point, fully transparent, nonactivating panel off screen, so the action
+still works without a visible window, and closes it once the answer lands or the caller cancels.
+
+`TranslationError` is annotated `macOS 26.4` while the deployment floor is `15.0`, so failures are
 caught as plain `Error` and reported by what was asked rather than by matching its cases.
 
 **The picker offers Apple's own list, never the reader's preferred languages.** `supportedLanguages`

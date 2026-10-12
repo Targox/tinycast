@@ -8,8 +8,8 @@ dependencies.
 
 ## Posture: modern-first, always
 
-**Tinycast supports macOS 26 and later, with macOS 27 strongly preferred.** Swift 6+ with complete
-strict concurrency is required. Prefer the latest Swift patterns and modern Apple APIs.
+**Tinycast supports macOS 15 (Sequoia) and later; it is designed for macOS 26 and 27.** Swift 6+ with
+complete strict concurrency is required. Prefer the latest Swift patterns and modern Apple APIs.
 
 Prefer current APIs and language features:
 
@@ -25,9 +25,11 @@ Prefer current APIs and language features:
   keep wrappers that only preserve an old spelling.
 - **A deprecated API is a defect**, not a warning to live with.
 - **Verify API and language-feature availability** against the SDK and compiler used by the build
-  and CI. Use direct availability checks where macOS 27+ APIs require them to preserve macOS 26 support.
+  and CI. Gate every macOS 26+ API behind a direct `#available` check with a working Sequoia branch,
+  and prove it with `./Scripts/verify-sequoia.sh`.
 - **No compatibility layers, legacy workarounds or obsolete patterns.** No migration scaffolding,
-  support below macOS 26 or speculative fallbacks. Keep the implementation direct.
+  support below macOS 15 or speculative fallbacks. A Sequoia branch is the one sanctioned fallback:
+  it lives inside the `#available` check, next to the macOS 26 code it stands in for.
 
 Carbon is a deliberate capability-gap dependency rather than inertia: nothing modern registers a
 system-wide chord, and HIToolbox's TIS APIs remain the public input-source mechanism. Full reasoning in
@@ -138,5 +140,6 @@ Each item is explained in [testing.md](docs/testing.md#definition-of-done).
 - `./Scripts/run-tests.sh` passes.
 - The Debug build compiles with **no new warnings**.
 - `./Scripts/lint.sh` is clean.
+- `./Scripts/verify-sequoia.sh --quick` passes, so nothing macOS 26-only slipped in unguarded.
 - `grep -rln 'import AppKit\|import SwiftUI\|import Cocoa' Tinycast/Features/*/Model/` returns nothing.
 - Any doc your change made wrong is fixed in the same commit.

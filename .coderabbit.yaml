@@ -39,12 +39,13 @@ reviews:
   path_instructions:
     - path: "**/*.swift"
       instructions: |
-        Tinycast supports macOS 26 and later, with macOS 27 strongly preferred. Swift 6+ with complete
-        strict concurrency is required. Prefer the latest Swift patterns and modern Apple APIs;
+        Tinycast supports macOS 15 (Sequoia) and later and is designed for macOS 26 and 27. Swift 6+
+        with complete strict concurrency is required. Prefer the latest Swift patterns and modern Apple APIs;
         no compatibility layers or legacy workarounds.
         Verify API and language-feature availability against the SDK and compiler used by the build
         and CI; state any SDK or compiler requirement with a suggested replacement.
-        Use direct availability checks where macOS 27+ APIs require them to preserve macOS 26 support.
+        Every macOS 26+ API must sit behind a direct `#available` check with a working Sequoia branch;
+        flag any that does not, since it breaks the macOS 15 build.
 
         Comment only when the change makes the code wrong, slower, harder to change, or older than
         it needs to be. A few strong findings beat many weak ones. Always give the concrete fix.
@@ -146,7 +147,7 @@ reviews:
           A new cache needs a measurement in the PR.
 
         Never suggest:
-        - Compatibility layers, legacy workarounds, support below macOS 26, migration scaffolding
+        - Compatibility layers, legacy workarounds, support below macOS 15, migration scaffolding
           or speculative fallbacks.
         - A singleton or static shared; AppCore owns long-lived state.
         - NSAlert, .alert, .confirmationDialog or .popover; use DialogController or HUDPresenter.

@@ -534,6 +534,42 @@ enum Theme {
 extension View {
     /// A floating glass control surface: regular, interactive Liquid Glass.
     func frosted(in shape: some Shape) -> some View {
-        glassEffect(.regular.interactive(), in: shape)
+        modifier(GlassSurface(shape: shape, isInteractive: true))
+    }
+
+    /// Regular glass for a floating panel, which must not lens under the cursor.
+    func glassSurface(in shape: some Shape) -> some View {
+        modifier(GlassSurface(shape: shape, isInteractive: false))
+    }
+
+    /// Sequoia has no glass button, so the bordered one stands in.
+    @ViewBuilder
+    func glassButtonStyle() -> some View {
+        if #available(macOS 26, *) {
+            buttonStyle(.glass)
+        } else {
+            buttonStyle(.bordered)
+        }
+    }
+}
+
+/// Liquid Glass on macOS 26; Sequoia has to draw the elevation glass carries for free by hand.
+private struct GlassSurface<S: Shape>: ViewModifier {
+    let shape: S
+    let isInteractive: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(macOS 26, *) {
+            let glass = isInteractive ? Glass.regular.interactive() : Glass.regular
+            content.glassEffect(glass, in: shape)
+        } else {
+            content.background {
+                shape
+                    .fill(.ultraThinMaterial)
+                    .overlay { shape.stroke(Theme.Colors.border, lineWidth: 0.5) }
+                    .shadow(color: Theme.Colors.tooltipShadow, radius: 6, y: 2)
+            }
+        }
     }
 }

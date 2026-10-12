@@ -18,7 +18,7 @@ const result = await build({
   bundle: true,
   format: "iife",
   platform: "neutral",
-  // JavaScriptCore on macOS 26 is fully modern; no downlevelling needed.
+  // JavaScriptCore on macOS 15 (Safari 18) already runs ES2022; no downlevelling needed.
   target: ["es2022"],
   minify: !dev,
   sourcemap: false,

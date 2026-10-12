@@ -10,14 +10,16 @@ When this document and the code disagree, the code is probably right and this fi
 
 ## Posture
 
-Tinycast supports macOS 26 and later, with macOS 27 strongly preferred. Swift 6+ with complete strict
-concurrency is required. Prefer the latest Swift patterns and modern Apple APIs, following
+Tinycast supports macOS 15 (Sequoia) and later and is designed for macOS 26 and 27. Swift 6+ with
+complete strict concurrency is required. Prefer the latest Swift patterns and modern Apple APIs, following
 [`AGENTS.md`](../AGENTS.md#posture-modern-first-always).
 
 Verify API and language-feature availability against the SDK and compiler used by the build and CI.
-Use direct availability checks where macOS 27+ APIs require them to preserve macOS 26 support. Do not
-introduce compatibility layers, legacy workarounds, support below macOS 26, migration scaffolding or
-speculative fallbacks.
+Every macOS 26+ API sits behind a direct `#available` check whose `else` branch works on Sequoia:
+`Theme.glassSurface(in:)`, `GlassEffectView`, `AppleIntelligenceProvider` and `TextTranslator` are
+the patterns to copy. `./Scripts/verify-sequoia.sh` typechecks the app at both floors and proves the
+shipped binary still launches on macOS 15. Do not introduce compatibility layers, legacy
+workarounds, support below macOS 15, migration scaffolding or speculative fallbacks.
 
 In practice that means Observation and never `ObservableObject` or `@Published`; `SMAppService` and
 never an `LSSharedFileList` shim. Adopt successors directly and delete obsolete call sites rather

@@ -53,7 +53,7 @@ struct NoteEditorView: NSViewRepresentable {
 
         private var input: NoteEditorInput
         private var isInstalling = false
-        private var undoObservers: [NotificationCenter.ObservationToken] = []
+        private var undoObservers: [NotificationToken] = []
         /// Held here because the layout manager keeps its delegate weakly.
         private let fragmentProvider = NoteLayoutFragmentProvider()
 
@@ -63,18 +63,15 @@ struct NoteEditorView: NSViewRepresentable {
             renderer = NoteMarkdownRenderer(isEnabled: parent.rendersMarkdown)
             super.init()
             let center = NotificationCenter.default
-            undoObservers = [
-                center.addObserver(of: editorUndoManager, for: .didUndoChange) { [weak self] _ in
-                    self?.sourceDidChange()
-                },
-                center.addObserver(of: editorUndoManager, for: .didRedoChange) { [weak self] _ in
-                    self?.sourceDidChange()
+            undoObservers = [Notification.Name.NSUndoManagerDidUndoChange, .NSUndoManagerDidRedoChange]
+                .map { name in
+                    let token = center.addObserver(
+                        forName: name, object: editorUndoManager, queue: .main
+                    ) { [weak self] _ in
+                        MainActor.assumeIsolated { self?.sourceDidChange() }
+                    }
+                    return NotificationToken(token, center: center)
                 }
-            ]
-        }
-
-        deinit {
-            for observer in undoObservers { NotificationCenter.default.removeObserver(observer) }
         }
 
         private func attach() {

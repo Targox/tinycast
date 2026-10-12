@@ -4,13 +4,14 @@ import Foundation
 /// The only provider with nothing to configure, so a first run may select it unasked.
 struct AppleIntelligenceProvider: AIProvider {
     /// The caller's, not a constant: the default filter refuses text the reader already wrote.
-    let guardrails: SystemLanguageModel.Guardrails
+    let guardrails: AppleIntelligenceGuardrails
 
-    init(guardrails: SystemLanguageModel.Guardrails = .default) {
+    init(guardrails: AppleIntelligenceGuardrails = .standard) {
         self.guardrails = guardrails
     }
 
     static func status() -> AppleIntelligenceStatus {
+        guard #available(macOS 26, *) else { return .requiresNewerMacOS }
         switch SystemLanguageModel.default.availability {
         case .available: return .available
         case .unavailable(.deviceNotEligible): return .deviceNotEligible
@@ -22,34 +23,16 @@ struct AppleIntelligenceProvider: AIProvider {
 
     func stream(_ request: AIRequest) -> AIProviderStream {
         AIProviderStream { continuation in
-            // Session and stream are born here: `ResponseStream` is `sending` and cannot cross.
             let task = Task.detached {
                 do {
-                    if let message = Self.status().message {
-                        throw AIProviderError.unavailable(message)
+                    guard #available(macOS 26, *), Self.status().isAvailable else {
+                        throw AIProviderError.unavailable(Self.status().message ?? "")
                     }
-                    let turn = Self.turn(for: request)
-                    guard let prompt = turn.prompt else {
-                        throw AIProviderError.responseFailed("There was nothing to send.")
-                    }
-                    let session = LanguageModelSession(
-                        model: SystemLanguageModel(guardrails: guardrails),
-                        transcript: turn.transcript)
-                    let options = GenerationOptions(
-                        maximumResponseTokens: min(
-                            request.maxOutputTokens, AppleIntelligence.maxOutputTokens))
-                    var delta = AppleIntelligenceDelta()
-                    for try await snapshot in session.streamResponse(to: prompt, options: options) {
-                        try Task.checkCancellation()
-                        let text = delta.delta(from: snapshot.content)
-                        if !text.isEmpty { continuation.yield(.text(text)) }
-                    }
+                    try await Self.respond(to: request, guardrails: guardrails, into: continuation)
                     continuation.yield(.finished)
                     continuation.finish()
                 } catch is CancellationError {
                     continuation.finish()
-                } catch let error as LanguageModelSession.GenerationError {
-                    continuation.finish(throwing: Self.providerError(error))
                 } catch {
                     continuation.finish(throwing: error)
                 }
@@ -58,7 +41,35 @@ struct AppleIntelligenceProvider: AIProvider {
         }
     }
 
+    /// Session and stream are born in the task: `ResponseStream` is `sending` and cannot cross.
+    @available(macOS 26, *)
+    private static func respond(
+        to request: AIRequest, guardrails: AppleIntelligenceGuardrails,
+        into continuation: AIProviderStream.Continuation
+    ) async throws {
+        let turn = Self.turn(for: request)
+        guard let prompt = turn.prompt else {
+            throw AIProviderError.responseFailed("There was nothing to send.")
+        }
+        let session = LanguageModelSession(
+            model: SystemLanguageModel(guardrails: guardrails.system),
+            transcript: turn.transcript)
+        let options = GenerationOptions(
+            maximumResponseTokens: min(request.maxOutputTokens, AppleIntelligence.maxOutputTokens))
+        var delta = AppleIntelligenceDelta()
+        do {
+            for try await snapshot in session.streamResponse(to: prompt, options: options) {
+                try Task.checkCancellation()
+                let text = delta.delta(from: snapshot.content)
+                if !text.isEmpty { continuation.yield(.text(text)) }
+            }
+        } catch let error as LanguageModelSession.GenerationError {
+            throw Self.providerError(error)
+        }
+    }
+
     /// Split the way a session takes it: the newest user turn is the prompt, the rest a transcript.
+    @available(macOS 26, *)
     static func turn(for request: AIRequest) -> (prompt: String?, transcript: Transcript) {
         var entries: [Transcript.Entry] = []
         if let instructions = request.instructions, !instructions.isEmpty {
@@ -89,6 +100,7 @@ struct AppleIntelligenceProvider: AIProvider {
     }
 
     /// Plain sentences: the only detail these carry is a `debugDescription` written for a log.
+    @available(macOS 26, *)
     static func providerError(_ error: LanguageModelSession.GenerationError) -> AIProviderError {
         switch error {
         case .exceededContextWindowSize:
@@ -108,6 +120,16 @@ struct AppleIntelligenceProvider: AIProvider {
             return .malformedResponse
         @unknown default:
             return .responseFailed("Apple Intelligence could not complete the response.")
+        }
+    }
+}
+
+@available(macOS 26, *)
+extension AppleIntelligenceGuardrails {
+    var system: SystemLanguageModel.Guardrails {
+        switch self {
+        case .standard: .default
+        case .permissiveContentTransformations: .permissiveContentTransformations
         }
     }
 }

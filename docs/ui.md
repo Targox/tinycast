@@ -438,11 +438,17 @@ leading gap. Headers are non-selectable display rows, so selection (keyed by id)
 
 ## Liquid Glass
 
-Source: `Theme.frosted(in:)`, `DesignSystem/PopoverMenu.swift`.
+Source: `Theme.frosted(in:)`, `Theme.glassSurface(in:)`, `DesignSystem/PopoverMenu.swift`.
 
 Glass is normally for floating controls. The dialog root is the one modal-surface exception.
 
-- `View.frosted(in:)` = `glassEffect(.regular.interactive(), in:)` — regular, interactive glass, so it follows the system Liquid Glass (clear ↔ tinted) setting; `.clear` ignores that setting. Used on the action-group capsule and the menu circle. Dialogs intentionally use untinted, non-interactive `.glassEffect(.regular)` on their root instead; HUDs retain the panel recipe (see "Dialogs & HUD"). Retune it in `frosted(in:)`, not per call site.
+- **Glass goes through the helpers, never `glassEffect` directly.** `frosted(in:)`,
+  `glassSurface(in:)`, `glassButtonStyle()` and `GlassEffectView` are Liquid Glass on macOS 26 and
+  fall back on Sequoia to `.ultraThinMaterial` with a hairline edge and a soft shadow (or HUD
+  vibrancy, for the backdrop), drawing back the elevation glass gives for free. Extensions keep
+  their own copy, `extensionGlass(in:)`.
+
+- `View.frosted(in:)` = `glassEffect(.regular.interactive(), in:)` on macOS 26 — regular, interactive glass, so it follows the system Liquid Glass (clear ↔ tinted) setting; `.clear` ignores that setting. Used on the action-group capsule and the menu circle. Dialogs intentionally use untinted, non-interactive `glassSurface(in:)` on their root instead; HUDs retain the panel recipe (see "Dialogs & HUD"). Retune it in `frosted(in:)`, not per call site.
 - **Menus are in-window overlays, not system popovers.** `.contextMenu`/`NSMenu` stall clicks for seconds inside a `LazyVStack` and spill outside the panel. Use `PopoverMenu` anchored to a corner via `.overlay`, inset `menuInset` (8pt) so its own corner isn't clipped by the panel's. A menu hung off a control instead of a corner — the clipboard type filter, `.topTrailing` — insets by that control's own metrics so their edges line up.
 - **A menu's `width` is fixed, never intrinsic**, so it can't jitter as its rows change. Every header menu states its own at its `RootPaletteView.menuContent` case — `menuWidth 276`, or a token of its own where that reads too wide (`clipboardFilterMenuWidth`, `fileSearchFilterMenuWidth`, `emojiCategoryMenuWidth`) — so retuning one never moves another. Native footer menus add 30pt without changing those header widths; extension Actions owns its nearby 310pt width inside the feature.
 - **`PopoverMenu`** uses `glassEffect(.regular)` with `menuPanel 16` corners and **no hand-tuned shadow** — Tahoe glass carries its own elevation; adding a drop shadow reads heavy and non-native. A footer menu raises only its attached bottom corner to the controls' 18-point radius, so the two silhouettes meet exactly.
@@ -490,7 +496,7 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
   red-glyph security warning can carry a plain white button — "Import executable commands?" does,
   since importing a file destroys nothing — and running a shell command the user wrote themselves is
   `.neutral` + `.standard` rather than a red alarm.
-- **Surface.** A dialog applies one system `.glassEffect(.regular)` to a
+- **Surface.** A dialog applies one system `glassSurface(in:)` to a
   `RoundedRectangle(panel 26)`. Confirmations and notices use `dialogCompactWidth 290`, including the
   volume slider; form dialogs use `dialogWidth 420`. `panelScrim` sits beneath the glass so the dialog
   keeps the launcher's darker density without losing the system material. `DialogPanel` clips its

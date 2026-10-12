@@ -40,11 +40,11 @@ enum EmojiCategory: String, CaseIterable, Sendable {
         switch self {
         case .smileysAndPeople: "face.smiling"
         case .animalsAndNature: "pawprint"
-        case .foodAndDrink: "pizza.slice"
+        case .foodAndDrink: Self.newerSymbol("pizza.slice", sequoia: "fork.knife")
         case .activity: "gamecontroller"
         case .travelAndPlaces: "paperplane"
         case .objects: "lightbulb"
-        case .symbols: "number.sign"
+        case .symbols: Self.newerSymbol("number.sign", sequoia: "number")
         case .flags: "flag"
         case .arrows: "arrow.up.right"
         case .currency: "dollarsign"
@@ -53,6 +53,12 @@ enum EmojiCategory: String, CaseIterable, Sendable {
         case .cjk: "globe"
         case .keysAndTechnical: "command"
         }
+    }
+
+    /// Sequoia's SF Symbols catalog predates these names, where they would draw nothing.
+    private static func newerSymbol(_ name: String, sequoia: String) -> String {
+        if #available(macOS 26, *) { return name }
+        return sequoia
     }
 
     /// Names the selected character in Actions; Unicode's latter categories are symbol collections.

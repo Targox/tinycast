@@ -9,6 +9,7 @@ enum UpdateFailure: LocalizedError, Equatable {
     case bundleMismatch
     case identityMismatch
     case versionMismatch(expected: String, found: String)
+    case requiresNewerMacOS(String)
     case replaceFailed(String)
 
     var errorDescription: String? {
@@ -27,6 +28,8 @@ enum UpdateFailure: LocalizedError, Equatable {
             return "The downloaded app is not signed by the identity this copy was signed with."
         case .versionMismatch(let expected, let found):
             return "The downloaded app is version \(found), not \(expected)."
+        case .requiresNewerMacOS(let minimum):
+            return "This release needs macOS \(minimum) or later."
         case .replaceFailed(let detail):
             return "Tinycast could not be replaced. \(detail)"
         }
@@ -40,7 +43,7 @@ enum UpdateFailure: LocalizedError, Equatable {
         case .replaceFailed:
             return "Nothing was installed. This usually means /Applications is not writable by "
                 + "your account."
-        case .quarantined:
+        case .quarantined, .requiresNewerMacOS:
             return "Nothing was installed."
         default:
             return nil

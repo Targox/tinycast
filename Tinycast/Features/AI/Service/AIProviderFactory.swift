@@ -1,4 +1,3 @@
-import FoundationModels
 import Foundation
 
 @MainActor
@@ -10,7 +9,7 @@ enum AIProviderFactory {
         subscription: ChatGPTSubscriptionManager,
         installedAI: InstalledAIManager,
         keyStore: KeychainSecretStore = .aiAPIKeys,
-        guardrails: SystemLanguageModel.Guardrails = .default,
+        guardrails: AppleIntelligenceGuardrails = .standard,
         toolServers: AIToolServerSession? = nil
     ) throws -> any AIProvider {
         switch selection {

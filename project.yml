@@ -2,7 +2,7 @@ name: Tinycast
 options:
   bundleIdPrefix: com.tinycast
   deploymentTarget:
-    macOS: "26.0"
+    macOS: "15.0"
   createIntermediateGroups: true
   groupSortPosition: top
 
@@ -80,6 +80,11 @@ targets:
         LD_RUNPATH_SEARCH_PATHS:
           - "$(inherited)"
           - "@executable_path/../Frameworks"
+        # Apple Intelligence is macOS 26 only; a strong link would stop dyld launching it on Sequoia.
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-weak_framework"
+          - FoundationModels
       configs:
         # Debug is its own channel, like beta/stable in release.yml: a distinct bundle id means a
         # locally-run build gets its own prefs, caches, TCC grants and login item instead of

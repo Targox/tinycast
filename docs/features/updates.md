@@ -64,6 +64,11 @@ no appcast: the release feed the website already reads is the feed the app reads
   the web, and a bare mention is what notifies the contributor, so the published body keeps them
   plain and `ReleaseNotes` spells them as Markdown links on the way to the window. Both point at
   `ReleaseFeed.repository`, the one place the repo is named.
+- **A Mac older than the feed's floor is never offered a release.** Every release on that repository
+  is built for `ReleaseFeed.minimumMacOS` (macOS 26), so on Sequoia `UpdateCheckStore.feedRunsHere`
+  is `false` and nothing is offered. `UpdateInstaller` also refuses a downloaded app whose
+  `LSMinimumSystemVersion` this Mac does not meet, so a feed that changes its floor later still
+  cannot install a build that would not launch.
 
 ## Channel and version
 

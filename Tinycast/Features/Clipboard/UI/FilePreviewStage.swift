@@ -45,9 +45,15 @@ struct FilePreviewStage: View {
 /// The recorded path is still the answer to "where was it?", so the row keeps it and says this.
 private struct MissingFileStage: View {
     @Environment(\.metrics) private var metrics
+    /// Sequoia's SF Symbols catalog predates the badged document, which would draw nothing.
+    private var missingSymbol: String {
+        if #available(macOS 26, *) { return "doc.badge.exclamationmark" }
+        return "exclamationmark.triangle"
+    }
+
     var body: some View {
         VStack(spacing: metrics.spacing.sm) {
-            Image(systemName: "doc.badge.exclamationmark")
+            Image(systemName: missingSymbol)
                 .font(.system(.largeTitle))
                 .symbolRenderingMode(.hierarchical)
             Text("File is no longer available")

@@ -25,12 +25,14 @@ final class DictationAudioDucker {
     init(
         fileURL: URL = AppPaths.applicationSupport().appending(path: "dictation-volume.json"),
         defaultOutput: @escaping () throws -> Output? = {
-            try AudioHardwareSystem.shared.defaultOutputDevice.flatMap {
+            guard #available(macOS 26, *) else { return try SequoiaAudioOutput.defaultOutput() }
+            return try AudioHardwareSystem.shared.defaultOutputDevice.flatMap {
                 try DictationAudioDucker.output(for: $0)
             }
         },
         resolveOutput: @escaping (String) throws -> Output? = { uid in
-            try AudioHardwareSystem.shared.device(forUID: uid).flatMap {
+            guard #available(macOS 26, *) else { return try SequoiaAudioOutput.output(forUID: uid) }
+            return try AudioHardwareSystem.shared.device(forUID: uid).flatMap {
                 try DictationAudioDucker.output(for: $0)
             }
         }
@@ -170,6 +172,7 @@ final class DictationAudioDucker {
         }.value
     }
 
+    @available(macOS 26, *)
     private static func output(for device: AudioHardwareDevice) throws -> Output? {
         guard let control = try device.controls.first(where: isMainOutputVolume) else { return nil }
         return Output(
@@ -177,6 +180,7 @@ final class DictationAudioDucker {
             read: { try control.volumeScalarValue }, write: { try control.setVolumeScalarValue($0) })
     }
 
+    @available(macOS 26, *)
     private static func isMainOutputVolume(_ control: AudioHardwareControl) -> Bool {
         guard (try? control.classID) == kAudioVolumeControlClassID else { return false }
         func value(for selector: AudioObjectPropertySelector) -> UInt32? {
@@ -190,5 +194,102 @@ final class DictationAudioDucker {
         }
         return value(for: kAudioControlPropertyScope) == kAudioObjectPropertyScopeOutput
             && value(for: kAudioControlPropertyElement) == kAudioObjectPropertyElementMain
+    }
+}
+
+/// Sequoia has no `AudioHardwareSystem`, so it reads the same HAL properties that API wraps.
+private enum SequoiaAudioOutput {
+    static func defaultOutput() throws -> DictationAudioDucker.Output? {
+        let device = try value(
+            of: AudioObjectID(kAudioObjectSystemObject), kAudioHardwarePropertyDefaultOutputDevice,
+            initial: AudioObjectID(kAudioObjectUnknown))
+        return try output(for: device)
+    }
+
+    static func output(forUID uid: String) throws -> DictationAudioDucker.Output? {
+        var address = mainAddress(kAudioHardwarePropertyTranslateUIDToDevice)
+        var qualifier = uid as CFString
+        var device = AudioObjectID(kAudioObjectUnknown)
+        var size = UInt32(MemoryLayout<AudioObjectID>.size)
+        try withUnsafeMutablePointer(to: &qualifier) { qualifier in
+            try check(
+                AudioObjectGetPropertyData(
+                    AudioObjectID(kAudioObjectSystemObject), &address,
+                    UInt32(MemoryLayout<CFString>.size), qualifier, &size, &device))
+        }
+        return try output(for: device)
+    }
+
+    private static func output(for device: AudioObjectID) throws -> DictationAudioDucker.Output? {
+        guard device != AudioObjectID(kAudioObjectUnknown),
+            let control = try controls(of: device).first(where: isMainOutputVolume)
+        else { return nil }
+        return DictationAudioDucker.Output(
+            deviceUID: try uid(of: device),
+            read: {
+                try Self.value(of: control, kAudioLevelControlPropertyScalarValue, initial: Float32(0))
+            },
+            write: { volume in
+                var address = Self.mainAddress(kAudioLevelControlPropertyScalarValue)
+                var volume = volume
+                try Self.check(
+                    AudioObjectSetPropertyData(
+                        control, &address, 0, nil, UInt32(MemoryLayout<Float32>.size), &volume))
+            })
+    }
+
+    private static func isMainOutputVolume(_ control: AudioObjectID) -> Bool {
+        (try? value(of: control, kAudioObjectPropertyClass, initial: AudioClassID(0)))
+            == kAudioVolumeControlClassID
+            && (try? value(of: control, kAudioControlPropertyScope, initial: UInt32(0)))
+                == kAudioObjectPropertyScopeOutput
+            && (try? value(of: control, kAudioControlPropertyElement, initial: UInt32(0)))
+                == kAudioObjectPropertyElementMain
+    }
+
+    private static func controls(of device: AudioObjectID) throws -> [AudioObjectID] {
+        var address = mainAddress(kAudioObjectPropertyControlList)
+        var size: UInt32 = 0
+        try check(AudioObjectGetPropertyDataSize(device, &address, 0, nil, &size))
+        let stride = MemoryLayout<AudioObjectID>.stride
+        var controls = [AudioObjectID](
+            repeating: AudioObjectID(kAudioObjectUnknown), count: Int(size) / stride)
+        try check(AudioObjectGetPropertyData(device, &address, 0, nil, &size, &controls))
+        return Array(controls.prefix(Int(size) / stride))
+    }
+
+    private static func uid(of device: AudioObjectID) throws -> String {
+        var address = mainAddress(kAudioDevicePropertyDeviceUID)
+        var uid: Unmanaged<CFString>?
+        var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
+        try withUnsafeMutablePointer(to: &uid) { uid in
+            try check(AudioObjectGetPropertyData(device, &address, 0, nil, &size, uid))
+        }
+        guard let uid else {
+            throw NSError(domain: NSOSStatusErrorDomain, code: Int(kAudioHardwareBadDeviceError))
+        }
+        return uid.takeRetainedValue() as String
+    }
+
+    private static func value<Value>(
+        of object: AudioObjectID, _ selector: AudioObjectPropertySelector, initial: Value
+    ) throws -> Value {
+        var address = mainAddress(selector)
+        var value = initial
+        var size = UInt32(MemoryLayout<Value>.size)
+        try withUnsafeMutablePointer(to: &value) { value in
+            try check(AudioObjectGetPropertyData(object, &address, 0, nil, &size, value))
+        }
+        return value
+    }
+
+    private static func mainAddress(_ selector: AudioObjectPropertySelector) -> AudioObjectPropertyAddress {
+        AudioObjectPropertyAddress(
+            mSelector: selector, mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+    }
+
+    private static func check(_ status: OSStatus) throws {
+        guard status == noErr else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(status)) }
     }
 }

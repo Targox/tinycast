@@ -14,6 +14,8 @@ struct AvailableRelease: Codable, Hashable, Sendable {
 enum ReleaseFeed {
     /// Where releases come from, and what every `@handle` and `#304` in their notes points at.
     static let repository = "abue-ammar/tinycast"
+    /// Every release published there is built for macOS 26, so an older Mac is never offered one.
+    static let minimumMacOS = OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0)
 
     /// The only artifact with an x86_64 slice, so the only one an Intel Mac can install.
     private static let universalMarker = "-Universal-"

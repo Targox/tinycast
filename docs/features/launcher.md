@@ -812,7 +812,7 @@ running dot and the availability of the running-only actions:
 - **Restart Application** — the row above Quit and **⌘R**, on the same guard: all three chords resolve
   their target through `LauncherScreen.runningApplication(at:)`, the single place that condition
   lives. `AppLauncher.restart(bundleID:url:)` snapshots the running instances, subscribes to
-  `NSWorkspace.DidTerminateApplicationMessage` _before_ terminating so an instance that exits at
+  `NSWorkspace.didTerminateApplicationNotification` _before_ terminating so an instance that exits at
   once can't outrun the wait, then reopens the bundle once every snapshotted PID has gone. The wait
   is bounded by a five-second grace: a quit an app refuses, or one sitting behind a save sheet the
   user leaves standing, relaunches nothing and leaves that app running. The palette dismisses the

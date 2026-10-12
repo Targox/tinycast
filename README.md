@@ -9,8 +9,8 @@ RAM.**
          src="https://img.shields.io/github/v/release/abue-ammar/tinycast?sort=semver&style=flat&label=release&color=1F6FEB"></a>
   <img alt="Swift 6.0"
        src="https://img.shields.io/badge/Swift-6.0-F05138?style=flat&logo=swift&logoColor=white">
-  <img alt="macOS 26 or later"
-       src="https://img.shields.io/badge/macOS-26%2B-000000?style=flat&logo=apple&logoColor=white">
+  <img alt="macOS 15 or later"
+       src="https://img.shields.io/badge/macOS-15%2B-000000?style=flat&logo=apple&logoColor=white">
   <a href="LICENSE">
     <img alt="License: AGPL-3.0"
          src="https://img.shields.io/badge/License-AGPL--3.0-3DA639?style=flat"></a>
@@ -91,6 +91,10 @@ Then run the one line that matches your Mac:
 
 Not sure which you have? **Apple menu → About This Mac.** Homebrew checks too, and refuses the
 wrong one.
+
+On **macOS 15 Sequoia**, build from source: open `Tinycast.xcodeproj` in Xcode 26 (which runs on
+macOS 15.6 or later) and run the `Tinycast` scheme. Everything works there except the on-device Apple
+Intelligence model, which needs macOS 26; panels use system materials instead of Liquid Glass.
 
 Want early builds? `brew install --cask tinycast@beta` puts `Tinycast Beta.app` beside the stable
 app, with its own settings and permissions. Apple silicon, macOS 26+.

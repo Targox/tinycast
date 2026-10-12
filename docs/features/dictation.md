@@ -55,6 +55,8 @@ compilation of its 2-bit weights; Ultra's encoder and both variants' decoder/joi
   Relaunch restores the original device only if its volume still matches that record, including
   when Dictation is disabled. An unavailable device keeps its record for a later attempt; new ducking
   waits for that recovery. File writes run off-main and finish before the hardware changes.
+  macOS 26 finds the output through `AudioHardwareSystem`; Sequoia reads the same HAL properties
+  (default output, control list, volume scalar) directly in `SequoiaAudioOutput`.
 - The microphone, waveform, permissions and insertion stay in Tinycast. Model loading, audio
   features and decoding run in `Tinycast Dictation` (`Tinycast Dev Dictation` in Debug), started
   only for transcription. Main-app state never retains Core ML models or imports the adapters.

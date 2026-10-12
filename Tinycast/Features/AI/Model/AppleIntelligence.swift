@@ -6,6 +6,7 @@ enum AppleIntelligenceStatus: Equatable, Sendable {
     case deviceNotEligible
     case notEnabled
     case modelNotReady
+    case requiresNewerMacOS
 
     var isAvailable: Bool { self == .available }
 
@@ -20,8 +21,16 @@ enum AppleIntelligenceStatus: Equatable, Sendable {
             return "Turn on Apple Intelligence in System Settings to chat on device."
         case .modelNotReady:
             return "Apple Intelligence is still downloading its model. Try again shortly."
+        case .requiresNewerMacOS:
+            return "Chatting with Apple Intelligence needs macOS 26 or later."
         }
     }
+}
+
+/// Mirrors the FoundationModels guardrails, which exist only from macOS 26.
+enum AppleIntelligenceGuardrails: Sendable {
+    case standard
+    case permissiveContentTransformations
 }
 
 enum AppleIntelligence {

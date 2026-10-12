@@ -15,7 +15,7 @@ struct NoteSwitcherView: View {
             results
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .glassEffect(.regular, in: surface)
+        .glassSurface(in: surface)
         .clipShape(surface)
         .onAppear(perform: focusSearch)
         .onChange(of: notes.switcherFocusRevision) { _, _ in focusSearch() }

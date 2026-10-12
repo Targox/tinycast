@@ -374,7 +374,7 @@ private struct ChatSourceChip: View {
             .font(metrics.typography.rowTrailing)
             .padding(.horizontal, metrics.spacing.xs)
         }
-        .buttonStyle(.glass)
+        .glassButtonStyle()
         .help(reference.url.absoluteString)
         .accessibilityLabel("Source \(index): \(reference.title), \(reference.host)")
     }

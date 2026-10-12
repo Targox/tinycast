@@ -5,7 +5,7 @@ is a set of standalone harnesses, and the manual half is the sweep at the bottom
 
 ## Definition of done
 
-The mechanical bar, in one place so it cannot drift. All five pass before a change is finished.
+The mechanical bar, in one place so it cannot drift. All six pass before a change is finished.
 
 | Check | Command |
 | --- | --- |
@@ -13,10 +13,11 @@ The mechanical bar, in one place so it cannot drift. All five pass before a chan
 | Lint | `./Scripts/lint.sh` |
 | Pure-layer purity | `grep -rln 'import AppKit\|import SwiftUI\|import Cocoa' Tinycast/Features/*/Model/` |
 | A clean build | `xcodebuild … -configuration Debug CODE_SIGNING_ALLOWED=NO`, zero **new** warnings |
+| The macOS 15 floor | `./Scripts/verify-sequoia.sh --quick` (the full run also builds Release and checks the binary) |
 | Docs still true | any doc your change made wrong, fixed in the same commit |
 
 There is no CI: every item is on you, run locally. CodeRabbit reviews each PR, but it is a reviewer,
-not a gate. Each is expanded below; the manual sweep at the end of this file is the sixth, judged by
+not a gate. Each is expanded below; the manual sweep at the end of this file is the seventh, judged by
 what you touched.
 
 ## The harnesses

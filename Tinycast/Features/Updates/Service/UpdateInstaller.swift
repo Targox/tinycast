@@ -90,12 +90,24 @@ struct UpdateInstaller: Sendable {
         guard info?["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier else {
             throw UpdateFailure.bundleMismatch
         }
+        if let minimum = info?["LSMinimumSystemVersion"] as? String,
+            !ProcessInfo.processInfo.isOperatingSystemAtLeast(Self.systemVersion(minimum))
+        {
+            throw UpdateFailure.requiresNewerMacOS(minimum)
+        }
         let found = info?["CFBundleShortVersionString"] as? String
         guard found == release.version.description else {
             throw UpdateFailure.versionMismatch(
                 expected: release.version.description, found: found ?? "unknown")
         }
         guard BundleSignature.isTrusted(staged) else { throw UpdateFailure.identityMismatch }
+    }
+
+    private static func systemVersion(_ string: String) -> OperatingSystemVersion {
+        let parts = string.split(separator: ".").map { Int($0) ?? 0 }
+        return OperatingSystemVersion(
+            majorVersion: parts.first ?? 0, minorVersion: parts.dropFirst().first ?? 0,
+            patchVersion: parts.dropFirst(2).first ?? 0)
     }
 
     /// Off disk, not through `Bundle`, whose cache would answer for the old copy.

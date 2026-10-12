@@ -22,7 +22,10 @@ enum BuiltInQuickAction: String, CaseIterable, Codable, Identifiable, Sendable {
         case .fixGrammar: return "textformat"
         case .rewrite: return "wand.and.sparkles"
         case .translate: return "translate"
-        case .summarize: return "text.line.3.summary"
+        case .summarize:
+            // An SF Symbols 7 glyph, which Sequoia's catalog would draw as nothing.
+            if #available(macOS 26, *) { return "text.line.3.summary" }
+            return "text.alignleft"
         }
     }
 
