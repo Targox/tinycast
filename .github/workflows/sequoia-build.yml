@@ -1,0 +1,70 @@
+name: Sequoia build
+
+# Builds a macOS 15 DMG in the cloud, so a Sequoia Mac without Xcode can still run this branch.
+on:
+  push:
+    branches: [claude/beautiful-mendel-djpyoy]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dmg:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode 26
+        run: |
+          XCODE_PATH="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n1)"
+          if [ -z "$XCODE_PATH" ]; then
+            echo "::error::No Xcode 26.x found on this runner. Installed Xcodes:"
+            ls /Applications | grep -i xcode || true
+            exit 1
+          fi
+          echo "Using $XCODE_PATH"
+          echo "DEVELOPER_DIR=$XCODE_PATH/Contents/Developer" >> "$GITHUB_ENV"
+
+      - name: Typecheck at macOS 15 and 26
+        run: ./Scripts/verify-sequoia.sh --quick
+
+      # Ad-hoc signed: no secrets in a fork, at the cost of re-granting Accessibility per build.
+      - name: Build universal Release
+        run: |
+          xcodebuild -project Tinycast.xcodeproj -scheme Tinycast -configuration Release \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
+            OTHER_CODE_SIGN_FLAGS="--timestamp=none" \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
+            build
+
+      - name: Assert the macOS 15 floor and a weak FoundationModels link
+        run: |
+          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/Tinycast.app"
+          BIN="$APP/Contents/MacOS/Tinycast"
+          PLIST_MIN="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$APP/Contents/Info.plist")"
+          [ "$PLIST_MIN" = "15.0" ] || { echo "::error::LSMinimumSystemVersion is $PLIST_MIN"; exit 1; }
+          for A in arm64 x86_64; do
+            MINOS="$(xcrun vtool -arch "$A" -show-build-version "$BIN" | awk '/minos/{print $2}')"
+            [ "$MINOS" = "15.0" ] || { echo "::error::$A: minos is $MINOS"; exit 1; }
+            STRONG="$(otool -l -arch "$A" "$BIN" \
+              | awk '/^ *cmd /{cmd=$2} /^ *name /{if (cmd=="LC_LOAD_DYLIB" && $2 ~ /FoundationModels/) print $2}')"
+            [ -z "$STRONG" ] || { echo "::error::$A: FoundationModels is strongly linked"; exit 1; }
+          done
+
+      - name: Package DMG
+        run: |
+          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/Tinycast.app"
+          STAGE="$(mktemp -d)"
+          cp -R "$APP" "$STAGE/"
+          ln -s /Applications "$STAGE/Applications"
+          hdiutil create -volname Tinycast -srcfolder "$STAGE" -ov -format UDZO \
+            "$RUNNER_TEMP/Tinycast-Sequoia.dmg"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Tinycast-Sequoia
+          path: ${{ runner.temp }}/Tinycast-Sequoia.dmg
+          retention-days: 14
