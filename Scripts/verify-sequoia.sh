@@ -11,6 +11,12 @@ cd "$(dirname "$0")/.." || exit 1
 
 QUICK=0
 [ "${1:-}" = "--quick" ] && QUICK=1
+# The Command Line Tools lack the SwiftUI macro plugins (`@Entry`, `@State`), so use Xcode's toolchain.
+if [ -z "${DEVELOPER_DIR:-}" ] && [[ "$(xcode-select -p 2>/dev/null)" != *.app/* ]]; then
+    XCODE="$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -n1)"
+    [ -n "$XCODE" ] || { echo "✗ Xcode not found in /Applications; install Xcode 26" >&2; exit 2; }
+    export DEVELOPER_DIR="$XCODE/Contents/Developer"
+fi
 SDK="$(xcrun --sdk macosx --show-sdk-path)"
 ARCH="$(uname -m)"
 
